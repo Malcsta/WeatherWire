@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "778344050564",
+    "project_id": "weatherwire-6eb71",
+    "storage_bucket": "weatherwire-6eb71.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778344050564:android:932d3bdeef093396edf7d1",
+        "android_client_info": {
+          "package_name": "com.example.weatherwire2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLgBurIDXLmURg0S5OOZ6XXu9FrO-D268"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

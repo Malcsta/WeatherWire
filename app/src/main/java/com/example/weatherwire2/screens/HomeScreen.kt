@@ -2,6 +2,7 @@ package com.example.weatherwire2.screens
 
 import android.content.Context
 import android.location.Location
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -38,8 +39,8 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.delay
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.util.Locale
 
-// Home Screen composable
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen() {
@@ -48,10 +49,22 @@ fun HomeScreen() {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var newsArticle by remember { mutableStateOf<NewsArticle?>(null) }
 
+    // TTS
+    var tts: TextToSpeech? by remember { mutableStateOf(null) }
+    var isReadingNews by remember { mutableStateOf(true) } // Track if we're reading news or weather
+
     val context = LocalContext.current
     val permissionState = rememberPermissionState(permission = android.Manifest.permission.ACCESS_FINE_LOCATION)
 
-    // fetch location and weather when the screen is launched
+    LaunchedEffect(Unit) {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.US
+            }
+        }
+    }
+
+    // Fetch location and weather when the screen is launched
     LaunchedEffect(true) {
         if (permissionState.status.isGranted) {
             getCurrentLocation(context = context) { location ->
@@ -101,10 +114,38 @@ fun HomeScreen() {
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center // Center the weather content
+            verticalArrangement = Arrangement.Top // Ensure weather content stays at the top
         ) {
-            // weather information display logic
-            Spacer(modifier = Modifier.weight(1f))
+            // Add the TTS Button that reads out weather or news
+
+            Spacer(modifier = Modifier.height(84.dp))
+            Button(
+                onClick = {
+                    if (isReadingNews) {
+                        // Read news aloud
+                        newsArticle?.let {
+                            val newsText = "${it.title}. ${it.description ?: "No description available."}"
+                            tts?.speak(newsText, TextToSpeech.QUEUE_FLUSH, null, null)
+                        }
+                    } else {
+                        // Read weather aloud
+                        weatherResponse?.let {
+                            val weatherText = "The current temperature is ${it.main.temp}°C in ${it.name}. The weather is ${it.weather[0].description}."
+                            tts?.speak(weatherText, TextToSpeech.QUEUE_FLUSH, null, null)
+                        }
+                    }
+
+                    // Toggle between reading news and weather
+                    isReadingNews = !isReadingNews
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isReadingNews) "Read News Aloud" else "Read Weather Aloud")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Display the weather or news depending on which we have
             if (isLoading) {
                 CircularProgressIndicator(color = Color.White)
             } else if (errorMessage != null) {
@@ -114,20 +155,22 @@ fun HomeScreen() {
                     val iconUrl = "https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png"
                     val painter = rememberAsyncImagePainter(iconUrl)
 
-                    // Icon
+                    // Weather Icon
                     Image(
                         painter = painter,
                         contentDescription = "Weather Icon",
                         modifier = Modifier.size(100.dp)
                     )
-                    // Main temp (add variable in here later for metric/Imperial change)
+
+                    // Weather Temp
                     Text(
                         text = "${weather.main.temp}°C",
                         fontSize = 72.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
-                    // Description
+
+                    // Weather Description
                     Text(
                         text = weather.name,
                         fontSize = 24.sp,
@@ -136,12 +179,15 @@ fun HomeScreen() {
                     )
                 }
             }
+        }
 
-            // Can change later for layout
-            Spacer(modifier = Modifier.weight(1f))
-
-            // News Card with full title and image only
-            newsArticle?.let { news ->
+        // News Article Display (placed at the bottom)
+        newsArticle?.let { news ->
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp) // Adjust padding as needed
+            ) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -152,7 +198,7 @@ fun HomeScreen() {
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Load and display the news image (if available)
+                        // Display news image if available
                         news.imageUrl?.let { imageUrl ->
                             AsyncImage(
                                 model = imageUrl,
@@ -173,6 +219,14 @@ fun HomeScreen() {
                     }
                 }
             }
+        }
+    }
+
+    // Clean up TTS resources when composable is disposed
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
         }
     }
 }

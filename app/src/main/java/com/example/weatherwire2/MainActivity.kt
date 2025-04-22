@@ -27,11 +27,13 @@ import androidx.navigation.NavHostController
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.google.firebase.FirebaseApp
 
-// Mainactivity which will call WeatherApp()
+// Main activity which will call WeatherApp()
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         setContent {
             WeatherAppTheme {
                 WeatherApp()
