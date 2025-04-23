@@ -51,11 +51,11 @@ fun HomeScreen() {
 
     // TTS
     var tts: TextToSpeech? by remember { mutableStateOf(null) }
-    var isReadingNews by remember { mutableStateOf(true) } // Track if we're reading news or weather
+    var isReadingNews by remember { mutableStateOf(true) }
 
     val context = LocalContext.current
-    val permissionState = rememberPermissionState(permission = android.Manifest.permission.ACCESS_FINE_LOCATION)
 
+    // Initialize Text-to-Speech
     LaunchedEffect(Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
@@ -64,35 +64,23 @@ fun HomeScreen() {
         }
     }
 
-    // Fetch location and weather when the screen is launched
-    LaunchedEffect(true) {
-        if (permissionState.status.isGranted) {
-            getCurrentLocation(context = context) { location ->
-                if (location != null) {
-                    fetchWeatherByCoordinates(
-                        // coords
-                        lat = location.latitude,
-                        lon = location.longitude,
-                        onSuccess = {
-                            weatherResponse = it
-                            isLoading = false
-                        },
-                        onError = {
-                            errorMessage = it
-                            isLoading = false
-                        }
-                    )
-                } else {
-                    errorMessage = "Unable to get location"
-                    isLoading = false
-                }
+    // Fetch Winnipeg weather directly (no location permissions needed)
+    LaunchedEffect(Unit) {
+        fetchWeatherByCoordinates(
+            lat = 49.8951,
+            lon = -97.1384,
+            onSuccess = {
+                weatherResponse = it
+                isLoading = false
+            },
+            onError = {
+                errorMessage = it
+                isLoading = false
             }
-        } else {
-            permissionState.launchPermissionRequest()
-        }
+        )
     }
 
-    // Fetch news every 10 seconds (revisit)
+    // Fetch news every 10 seconds
     LaunchedEffect(Unit) {
         while (true) {
             fetchNews { newsArticle = it }
@@ -100,7 +88,7 @@ fun HomeScreen() {
         }
     }
 
-    // Box for BG
+    // Background and UI layout...
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.home_screen),
@@ -114,28 +102,23 @@ fun HomeScreen() {
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top // Ensure weather content stays at the top
+            verticalArrangement = Arrangement.Top
         ) {
-            // Add the TTS Button that reads out weather or news
-
             Spacer(modifier = Modifier.height(84.dp))
+
             Button(
                 onClick = {
                     if (isReadingNews) {
-                        // Read news aloud
                         newsArticle?.let {
                             val newsText = "${it.title}. ${it.description ?: "No description available."}"
                             tts?.speak(newsText, TextToSpeech.QUEUE_FLUSH, null, null)
                         }
                     } else {
-                        // Read weather aloud
                         weatherResponse?.let {
-                            val weatherText = "The current temperature is ${it.main.temp}°C in ${it.name}. The weather is ${it.weather[0].description}."
+                            val weatherText = "The current temperature is ${it.main.temp}°C in Winnipeg. The weather is ${it.weather[0].description}."
                             tts?.speak(weatherText, TextToSpeech.QUEUE_FLUSH, null, null)
                         }
                     }
-
-                    // Toggle between reading news and weather
                     isReadingNews = !isReadingNews
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -145,7 +128,6 @@ fun HomeScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Display the weather or news depending on which we have
             if (isLoading) {
                 CircularProgressIndicator(color = Color.White)
             } else if (errorMessage != null) {
@@ -155,14 +137,12 @@ fun HomeScreen() {
                     val iconUrl = "https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png"
                     val painter = rememberAsyncImagePainter(iconUrl)
 
-                    // Weather Icon
                     Image(
                         painter = painter,
                         contentDescription = "Weather Icon",
                         modifier = Modifier.size(100.dp)
                     )
 
-                    // Weather Temp
                     Text(
                         text = "${weather.main.temp}°C",
                         fontSize = 72.sp,
@@ -170,9 +150,8 @@ fun HomeScreen() {
                         color = Color.White
                     )
 
-                    // Weather Description
                     Text(
-                        text = weather.name,
+                        text = "Winnipeg",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -181,12 +160,11 @@ fun HomeScreen() {
             }
         }
 
-        // News Article Display (placed at the bottom)
         newsArticle?.let { news ->
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp) // Adjust padding as needed
+                    .padding(16.dp)
             ) {
                 Card(
                     modifier = Modifier
@@ -198,7 +176,6 @@ fun HomeScreen() {
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Display news image if available
                         news.imageUrl?.let { imageUrl ->
                             AsyncImage(
                                 model = imageUrl,
@@ -222,7 +199,7 @@ fun HomeScreen() {
         }
     }
 
-    // Clean up TTS resources when composable is disposed
+    // Clean up TTS
     DisposableEffect(Unit) {
         onDispose {
             tts?.stop()
@@ -231,7 +208,7 @@ fun HomeScreen() {
     }
 }
 
-// Function to get current location
+/*// Function to get current location
 fun getCurrentLocation(context: Context, onLocationReceived: (Location?) -> Unit) {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     val locationTask: Task<Location> = fusedLocationClient.lastLocation
@@ -244,7 +221,7 @@ fun getCurrentLocation(context: Context, onLocationReceived: (Location?) -> Unit
         }
         onLocationReceived(location)
     }
-}
+}*/
 
 // Fetch weather data by coordinates
 fun fetchWeatherByCoordinates(

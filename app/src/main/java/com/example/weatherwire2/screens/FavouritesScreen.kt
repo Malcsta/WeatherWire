@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.weatherwire2.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -56,7 +57,7 @@ fun FavoritesScreen() {
                             }
                         }
                     } else {
-                        Text("Welcome, ${currentUser?.email ?: "User"}!")
+                        FavoriteLocationsUI(currentUser!!)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = {
                             auth.signOut()
@@ -89,7 +90,6 @@ fun FavoritesScreen() {
     }
 }
 
-
 fun saveFavorites(userId: String, favorites: List<String>) {
     val db = FirebaseFirestore.getInstance()
     db.collection("users").document(userId)
@@ -101,6 +101,7 @@ fun saveFavorites(userId: String, favorites: List<String>) {
             Log.e("Favorites", "Failed to save favorites: ${e.message}")
         }
 }
+
 
 fun loadFavorites(userId: String, onComplete: (List<String>) -> Unit) {
     val db = FirebaseFirestore.getInstance()
@@ -272,23 +273,108 @@ fun SignUpScreen(onSignUpSuccess: () -> Unit, onBack: () -> Unit) {
 }
 
 @Composable
-fun FavoriteLocationsUI() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Your Favorite Weather Spots:")
-        Spacer(modifier = Modifier.height(8.dp))
-        // Example spots - you can make this dynamic later!
-        Button(onClick = { /* TODO: Handle favorite selection */ }) {
-            Text("New York")
+fun FavoriteLocationsUI(currentUser: FirebaseUser) {
+    val db = FirebaseFirestore.getInstance()
+    var citySearch by remember { mutableStateOf("") }
+    var favorites by remember { mutableStateOf(listOf<String>()) }
+    var searchResults by remember { mutableStateOf(listOf<String>()) }
+    val maxFavorites = 5
+
+    val allCities = listOf(
+        "New York", "Los Angeles", "Chicago", "Houston", "Toronto",
+        "Paris", "London", "Tokyo", "Seoul", "Sydney", "Melbourne", "Berlin", "Madrid"
+    )
+
+    // Load favorites from Firestore once
+    LaunchedEffect(currentUser.uid) {
+        loadFavorites(currentUser.uid) { loadedFavorites ->
+            favorites = loadedFavorites
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { /* TODO: Handle favorite selection */ }) {
-            Text("Tokyo")
+    }
+
+    LaunchedEffect(citySearch) {
+        searchResults = if (citySearch.isNotBlank()) {
+            allCities.filter { it.contains(citySearch, ignoreCase = true) }
+        } else {
+            emptyList()
         }
+    }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Select up to $maxFavorites Favorite Cities:")
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { /* TODO: Handle favorite selection */ }) {
-            Text("Paris")
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = citySearch,
+                onValueChange = { citySearch = it },
+                label = { Text("Search for a city") },
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    val matchingCity = allCities.firstOrNull { it.equals(citySearch.trim(), ignoreCase = true) }
+                    if (matchingCity != null && favorites.size < maxFavorites && !favorites.contains(matchingCity)) {
+                        favorites = favorites + matchingCity
+                        citySearch = "" // Clear after adding
+                    }
+                },
+                enabled = citySearch.isNotBlank() && favorites.size < maxFavorites,
+            ) {
+                Text("Add")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Show search results
+        searchResults.forEach { city ->
+            Button(
+                onClick = {
+                    if (favorites.size < maxFavorites && !favorites.contains(city)) {
+                        favorites = favorites + city
+                    }
+                },
+                enabled = favorites.size < maxFavorites && !favorites.contains(city),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+            ) {
+                Text(city)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Selected Favorites:")
+        favorites.forEach { city ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                Text(city)
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        favorites = favorites - city
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Remove", color = MaterialTheme.colorScheme.onError)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                saveFavorites(currentUser.uid, favorites)
+            },
+            enabled = favorites.isNotEmpty()
+        ) {
+            Text("Save Favorites")
         }
     }
 }
