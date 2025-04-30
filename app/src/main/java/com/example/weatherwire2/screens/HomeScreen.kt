@@ -1,9 +1,11 @@
+/* Name: Malcolm White
+ * Date: 2025-03-23
+ * Description: Home screen code for WeatherWire
+ */
+
 package com.example.weatherwire2.screens
 
-import android.content.Context
-import android.location.Location
 import android.speech.tts.TextToSpeech
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,8 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.weatherwire2.network.WeatherApiService
 import com.example.weatherwire2.network.WeatherResponse
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.Task
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -32,8 +32,6 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.weatherwire2.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import coil3.compose.rememberAsyncImagePainter
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.delay

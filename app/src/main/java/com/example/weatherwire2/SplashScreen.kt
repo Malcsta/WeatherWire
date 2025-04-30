@@ -21,16 +21,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
 // Splash screen class
 class SplashScreen : ComponentActivity() {
 
-    /** Name: Malcolm White
-     * Date: 2025-03-23
-     * Description: A retrofit instance used for making HTTP requests to the weather API.
-     * Params:
-     * Exceptions:
-     */
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -1,3 +1,8 @@
+/* Name: Malcolm White
+ * Date: 2025-03-23
+ * Description: Favourites screen code for WeatherWire
+ */
+
 package com.example.weatherwire2.screens
 
 import android.util.Log
@@ -16,11 +21,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 enum class ScreenState {
     Main, Login, SignUp
 }
 
+// Favourites screen composable
 @Composable
 fun FavoritesScreen() {
     val auth = FirebaseAuth.getInstance()
@@ -45,7 +52,7 @@ fun FavoritesScreen() {
                     modifier = Modifier.padding(16.dp)
                 ) {
                     if (currentUser == null) {
-                        Text("Please log in or sign up.")
+                        Text("Please log in, sign up, or continue as guest.")
                         Spacer(modifier = Modifier.height(16.dp))
                         Row {
                             Button(onClick = { screenState = ScreenState.Login }) {
@@ -54,6 +61,20 @@ fun FavoritesScreen() {
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(onClick = { screenState = ScreenState.SignUp }) {
                                 Text("Sign Up")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(onClick = {
+                                // Sign in as a guest (anonymous authentication)
+                                auth.signInAnonymously()
+                                    .addOnCompleteListener { task ->
+                                        if (task.isSuccessful) {
+                                            currentUser = auth.currentUser
+                                        } else {
+                                            Log.e("Guest Login", "Failed to sign in as guest: ${task.exception?.message}")
+                                        }
+                                    }
+                            }) {
+                                Text("Continue as Guest")
                             }
                         }
                     } else {
@@ -90,19 +111,25 @@ fun FavoritesScreen() {
     }
 }
 
+// Function to save favourites
 fun saveFavorites(userId: String, favorites: List<String>) {
     val db = FirebaseFirestore.getInstance()
-    db.collection("users").document(userId)
-        .update("favorites", favorites)
+    val userDocRef = db.collection("users").document(userId)
+    val data = hashMapOf(
+        "favorites" to favorites
+    )
+
+    userDocRef.set(data, SetOptions.merge())
         .addOnSuccessListener {
-            Log.d("Favorites", "Favorites saved successfully")
+            Log.d("Favorites", "Favorites saved successfully for user $userId")
         }
         .addOnFailureListener { e ->
-            Log.e("Favorites", "Failed to save favorites: ${e.message}")
+            // Log the error in detail if saving fails
+            Log.e("Favorites", "Failed to save favorites for user $userId: ${e.message}", e)
         }
 }
 
-
+// Function to load favourites
 fun loadFavorites(userId: String, onComplete: (List<String>) -> Unit) {
     val db = FirebaseFirestore.getInstance()
     db.collection("users").document(userId)
@@ -117,6 +144,7 @@ fun loadFavorites(userId: String, onComplete: (List<String>) -> Unit) {
         }
 }
 
+// Login screen composable
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit, onBack: () -> Unit) {
     val auth = FirebaseAuth.getInstance()
@@ -178,6 +206,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onBack: () -> Unit) {
     }
 }
 
+// Signup screen composable
 @Composable
 fun SignUpScreen(onSignUpSuccess: () -> Unit, onBack: () -> Unit) {
     val auth = FirebaseAuth.getInstance()
@@ -272,6 +301,7 @@ fun SignUpScreen(onSignUpSuccess: () -> Unit, onBack: () -> Unit) {
     }
 }
 
+// Favourite locations composable
 @Composable
 fun FavoriteLocationsUI(currentUser: FirebaseUser) {
     val db = FirebaseFirestore.getInstance()

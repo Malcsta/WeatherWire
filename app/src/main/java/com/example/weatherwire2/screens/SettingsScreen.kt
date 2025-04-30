@@ -1,8 +1,13 @@
+/* Name: Malcolm White
+ * Date: 2025-03-23
+ * Description: Settings screen code for WeatherWire
+ */
+
 package com.example.weatherwire2.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme // Keep this import if you use MaterialTheme properties inside SettingsScreen
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -19,11 +24,13 @@ import androidx.compose.ui.unit.dp
 import com.example.weatherwire2.R
 
 @Composable
-fun SettingsScreen() {
-    // State variables for the settings
+fun SettingsScreen(
+    isDarkMode: Boolean,
+    onSetDarkMode: (Boolean) -> Unit
+) {
+    // State variables for other settings (these can remain local)
     var selectedUnit by remember { mutableStateOf("°C") }
     var selectedWindSpeed by remember { mutableStateOf("km/h") }
-    var isDarkMode by remember { mutableStateOf(false) }
     var notificationsEnabled by remember { mutableStateOf(true) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -80,13 +87,13 @@ fun SettingsScreen() {
             Row {
                 RadioButton(
                     selected = !isDarkMode,
-                    onClick = { isDarkMode = false }
+                    onClick = { onSetDarkMode(false) }
                 )
                 Text("Light Mode")
                 Spacer(modifier = Modifier.width(16.dp))
                 RadioButton(
                     selected = isDarkMode,
-                    onClick = { isDarkMode = true }
+                    onClick = { onSetDarkMode(true) }
                 )
                 Text("Dark Mode")
             }
